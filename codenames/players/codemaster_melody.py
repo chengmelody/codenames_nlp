@@ -71,7 +71,7 @@ class ai_codemaster(codemaster):
 
 			results = []
 
-			for i in range(len(embedding)):
+			for i in range(len(input_words)):
 				search_vect = sess.run(embedding[i]).reshape(1, -1)
 				cosine_similarities = pd.Series(cosine_similarity(search_vect, self.cm_wordlist_run).flatten())
 
@@ -93,7 +93,7 @@ class ai_codemaster(codemaster):
 		np.set_printoptions(threshold=sys.maxsize)
 		red_embeddings = self.elmo(red_words, signature="default", as_dict=True)["default"]
 
-		results_returned = 50
+		results_returned = 200
 		results = self.cosineSimilarity(red_embeddings, red_words, results_returned)
 			
 		for i in range(0, results_returned):
@@ -103,5 +103,5 @@ class ai_codemaster(codemaster):
 			if common_words:
 				word, freq = common_words.most_common(1)[0]
 
-				if freq > 1 or len(input) == 1:
+				if freq > 1 or len(red_words) == 1:
 					return word, freq
