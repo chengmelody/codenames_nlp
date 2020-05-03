@@ -20,11 +20,10 @@ class ai_codemaster(codemaster):
 
 	def __init__(self, brown_ic=None, glove_vecs=None, word_vectors=None):
 		self.cm_wordlist = []
+		self.previous_clue = []
 		with open('players/cm_wordlist.txt') as infile:
 			for line in infile:
 				self.cm_wordlist.append(line.rstrip())
-		
-		print(len(self.cm_wordlist))
 
 		self.elmo = hub.Module("https://tfhub.dev/google/elmo/3", trainable=True)
 		cm_wordlist_embedding = self.elmo(self.cm_wordlist, signature="default", as_dict=True)["default"]
@@ -45,6 +44,7 @@ class ai_codemaster(codemaster):
 		print("RED:\t", self.red_words)
 
 		chosen_clue, chosen_num = self.getNearest(self.red_words, self.bad_words)
+		self.previous_clue.append(chosen_clue)
 
 		print('chosen_clue is:', chosen_clue)
 		return (chosen_clue, chosen_num)
@@ -82,26 +82,30 @@ class ai_codemaster(codemaster):
 				clean_up = words[1:]
 				clean_up = [w for w in clean_up if not w.startswith(input_words[i])]
 				results.append(clean_up)
-
-				# print(input[i])
-				# print(words[1:])
-				# print("")
 			
 			return results
 
 	def getNearest(self, red_words, bad_words):
 		np.set_printoptions(threshold=sys.maxsize)
 		red_embeddings = self.elmo(red_words, signature="default", as_dict=True)["default"]
+		bad_embeddings = self.elmo(bad_words, signature="default", as_dict=True)["default"]
 
 		results_returned = 200
-		results = self.cosineSimilarity(red_embeddings, red_words, results_returned)
+		red_results = self.cosineSimilarity(red_embeddings, red_words, results_returned)
+		bad_results = self.cosineSimilarity(bad_embeddings, bad_words, results_returned)
 			
-		for i in range(0, results_returned):
-			common_words = collections.Counter(x for xs in results for x in xs[:i])
+		for i in range(20, results_returned):
+			red_common_words = collections.Counter(x for xs in red_results for x in xs[:i])
+			bad_common_words = collections.Counter(x for xs in bad_results for x in xs[:i])
+
+			diff_common_words = red_common_words - bad_common_words
+			for clue in self.previous_clue:
+				del diff_common_words[clue]
+			#print(diff_common_words)
 			# common_words = set(results[0]).intersection(*results[1:])
 
-			if common_words:
-				word, freq = common_words.most_common(1)[0]
+			if diff_common_words:
+				word, freq = diff_common_words.most_common(1)[0]
 
 				if freq > 1 or len(red_words) == 1:
 					return word, freq

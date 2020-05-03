@@ -44,10 +44,14 @@ class ai_guesser(guesser):
 		self.num -= 1
 		return result[0][1]
 	
+	def cos_sim(a, b):
+			return np.inner(a, b) / (np.linalg.norm(a) * (np.linalg.norm(b)))
+
 	def getNearest(self, input):
 		np.set_printoptions(threshold=sys.maxsize)
 
 		new_words = [x for x in self.words if "*" not in x]
+		# print(new_words)
 		board_embedding = self.elmo(new_words, signature="default", as_dict=True)["default"]
 
 		with tf.compat.v1.Session() as sess:
@@ -55,43 +59,17 @@ class ai_guesser(guesser):
 			t_init = tf.compat.v1.tables_initializer()
 			sess.run(init)
 			sess.run(t_init)
-			self.board_run = sess.run(board_embedding)
+			board_run = sess.run(board_embedding)
 
 
-		embeddings = self.elmo(input, signature="default", as_dict=True)["default"]
+			embedding = self.elmo(input, signature="default", as_dict=True)["default"]
+			results_returned = 100
 
-		results_returned = 5
+			search_vect = sess.run(embedding[0]).reshape(1, -1)
+			cosine_similarities = pd.Series(cosine_similarity(search_vect, board_run).flatten())
 
-		with tf.compat.v1.Session() as sess:
-			init = tf.compat.v1.global_variables_initializer()
-			t_init = tf.compat.v1.tables_initializer()
-			sess.run(init)
-			sess.run(t_init)
-
-			search_vect = sess.run(embeddings[0]).reshape(1, -1)
-
-			cosine_similarities = pd.Series(cosine_similarity(search_vect, self.board_run).flatten())
 			words = []
-			for index, prob in cosine_similarities.nlargest(results_returned).iteritems():
-				words.append((prob, new_words[index]))
-			
-		return words
-			# # clean_up = words[1:]
-			# # clean_up = [w for w in clean_up if not w.startswith(input[i])]
-			# results.append(words)
+			for index, probablity in cosine_similarities.nlargest(results_returned).iteritems():
+				words.append((probablity, new_words[index]))
 
-			# # 	print(input[i])
-			# # 	print(words[1:])
-			# # 	print("")
-			
-			# # print(results)
-
-			# 	common_words = collections.Counter(x for xs in results for x in xs[:i])
-			# 	# common_words = set(results[0]).intersection(*results[1:])
-
-			# 	if common_words:
-			# 		word, freq = common_words.most_common(1)[0]
-
-			# 		if freq > 1 or len(input) == 1:
-			# 			return word, freq
-
+			return words
