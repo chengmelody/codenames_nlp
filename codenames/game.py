@@ -248,7 +248,8 @@ class Game:
 					guess_num += 1
 					print("Keep Guessing?")
 					keep_guessing = self.guesser.keep_guessing(clue, words_in_play)
-					print("The clue is :", clue, num, sep=" ")
+					if(keep_guessing):
+						print("The clue is :", clue, num, sep=" ")
 
 				# if guesser selected a civilian or a blue-paired word
 				elif game_condition == "Still Going":

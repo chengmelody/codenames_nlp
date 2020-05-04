@@ -13,7 +13,7 @@ class ai_codemaster(codemaster):
 			for line in infile:
 				self.cm_wordlist.append(line.rstrip())
 
-		self.model = SentenceTransformer('bert-base-nli-mean-tokens')
+		self.model = SentenceTransformer('bert-base-nli-stsb-mean-tokens')
 		self.cm_wordlist_embedding = self.model.encode(self.cm_wordlist)
 
 	def receive_game_state(self, words, maps):
@@ -68,33 +68,40 @@ class ai_codemaster(codemaster):
 				
 		return answer
 
+	def removeBadClues(self, red_common_words, bad_common_words, lose_closest):
+
+		diff_common_words = red_common_words - bad_common_words
+
+		for w in lose_closest[0]:
+			del diff_common_words[w]
+			
+		if self.previous_clue in diff_common_words:
+			diff_common_words[self.previous_clue] -= 1
+
+		for clue in self.previous_clue:
+		 	del diff_common_words[clue]
+
+		# print(diff_common_words.most_common(5))
+		return diff_common_words
+
+
 	def getBestClue(self, red_words, bad_words, lose_words):
-		num_results = 100
+		num_results = 200
 		red_closest = self.getClosestWords(red_words, num_results)
 		bad_closest = self.getClosestWords(bad_words, num_results)
 		lose_closest = self.getClosestWords(lose_words, num_results)
-			
-		diff_common_words = None
-		for i in range(num_results):
+
+		red_common_words = None
+		for i in range(30, num_results):
 			red_common_words = collections.Counter(x for xs in red_closest for x in xs[:i])
 			bad_common_words = collections.Counter(x for xs in bad_closest for x in xs[:i])
 
-
-			diff_common_words = red_common_words - bad_common_words
-
-			for w in lose_closest[0]:
-				del diff_common_words[w]
-				
-			diff_common_words[self.previous_clue] -= 1
-
-			# for clue in self.previous_clue:
-			#  	del diff_common_words[clue]
-
-			if diff_common_words:
-				word, freq = diff_common_words.most_common(1)[0]
+			new_common_words = self.removeBadClues(red_common_words, bad_common_words, lose_closest)
+			if red_common_words:
+				word, freq = red_common_words.most_common(1)[0]
 
 				if freq > 1 or len(red_words) == 1:
 					return word, freq
-		
-		word, freq = diff_common_words.most_common(1)[0]
-		return word, freq
+		else:
+			red_common_words.most_common(1)[0]
+			return word, freq

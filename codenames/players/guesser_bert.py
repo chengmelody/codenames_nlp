@@ -12,7 +12,7 @@ class ai_guesser(guesser):
 		self.word_vectors = word_vectors
 		self.num = 0
 
-		self.model = SentenceTransformer('bert-base-nli-mean-tokens')
+		self.model = SentenceTransformer('bert-base-nli-stsb-mean-tokens')
 
 	def get_board(self, words):
 		self.words = words
@@ -20,7 +20,6 @@ class ai_guesser(guesser):
 	def get_clue(self, clue, num):
 		self.clue = clue
 		self.num = num
-		self.start = num
 		print("The clue is:", clue, num, sep=" ")
 		return [clue, num]
 
@@ -41,14 +40,13 @@ class ai_guesser(guesser):
 		results_returned = 5
 		
 		best_guess = []
-		for query, query_embedding in zip(guess, guess_embedding):
-				distances = scipy.spatial.distance.cdist([query_embedding], board_embedding, "cosine")[0]
+		distances = scipy.spatial.distance.cdist([guess_embedding[0]], board_embedding, "cosine")[0]
 
-				results = zip(range(len(distances)), distances)
-				results = sorted(results, key=lambda x: x[1])
+		results = zip(range(len(distances)), distances)
+		results = sorted(results, key=lambda x: x[1])
 
-				for idx, distance in results[0:results_returned]:
-						#print(updated_board[idx], "(Cosine Score: %.4f)" % (1-distance))
-						best_guess.append((1-distance, updated_board[idx]))
+		for idx, distance in results[0:results_returned]:
+				#print(updated_board[idx], "(Cosine Score: %.4f)" % (1-distance))
+				best_guess.append((1-distance, updated_board[idx]))
 		
 		return best_guess

@@ -1,2 +1,2 @@
 python game.py players.codemaster_melody players.guesser_w2v --seed 3442 --w2v players/GoogleNews-vectors-negative300.bin --wordnet ic-brown.dat
-python game.py players.codemaster_melody players.guesser_melody --seed 3442
+python game.py players.codemaster_bert players.guesser_bert --seed 3442
