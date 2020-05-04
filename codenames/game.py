@@ -22,6 +22,34 @@ import argparse
 class Game:
 	guesser = 0
 	codemaster = 0
+
+	def __init__(self, codemaster, guesser):
+		codemaster_module = importlib.import_module(codemaster)
+		self.codemaster = codemaster_module.ai_codemaster()
+		print('loaded codemaster')
+
+		guesser_module = importlib.import_module(guesser)
+		self.guesser = guesser_module.ai_guesser()
+		print('loaded guesser')
+
+		self.seed = 'time'
+
+		f = open("game_wordpool.txt", "r")
+		
+		if f.mode == 'r':
+			temp_array = f.read().splitlines()
+			self.words = set([])
+			# if duplicates were detected and the set length is not 25 then restart
+			while len(self.words) != 25:
+				self.words = set([])
+				for x in range(0, 25):
+					random.shuffle(temp_array)
+					self.words.add(temp_array.pop())
+			self.words = list(sorted(self.words))
+			random.shuffle(self.words)
+
+		self.maps = ["Red"]*8 + ["Blue"]*7 + ["Civilian"]*9 + ["Assassin"]
+		random.shuffle(self.maps)
 	
 	def __init__(self):
 		parser = argparse.ArgumentParser(
@@ -183,7 +211,7 @@ class Game:
 	def cls(self):
 		print('\n'*4)
 
-	def write_results(self, num_of_turns):
+	def write_results(self, num_of_turns, win):
 		red_result = 0
 		blue_result = 0
 		civ_result = 0
@@ -201,14 +229,16 @@ class Game:
 					assa_result += 1
 			total = red_result + blue_result + civ_result + assa_result
 
-			f = open("bot_results.txt", "a")
-			# if successfully opened start appending
-			if f.mode == 'a':
-				f.write(
-					f'TOTAL:{num_of_turns} B:{blue_result} C:{civ_result} A:{assa_result}'
-					f' R:{red_result} CM:{sys.argv[1]} GUESSER:{sys.argv[2]} SEED:{self.seed}\n'
-					)
-			f.close()
+			# f = open("bot_results.txt", "a")
+			# # if successfully opened start appending
+			# if f.mode == 'a':
+			# 	f.write(
+			# 		f'TOTAL:{num_of_turns} B:{blue_result} C:{civ_result} A:{assa_result}'
+			# 		f' R:{red_result} CM:{sys.argv[1]} GUESSER:{sys.argv[2]} SEED:{self.seed}\n'
+			# 		)
+			# f.close()
+		
+		return Result(win, num_of_turns, blue_result, civ_result, assa_result, red_result)
 
 	def run(self):
 		game_condition = "Hit_Red"
@@ -261,16 +291,112 @@ class Game:
 					game_counter = 25
 					self.write_results(game_counter)
 					print("Game Counter:", game_counter)
-					exit()
+					return self.write_results(game_counter, False)
 
 				elif game_condition == "Win":
 					self.display_board_codemaster()
 					print("You Won")
 					self.write_results(game_counter)
 					print("Game Counter:", game_counter)
-					exit()
+					return self.write_results(game_counter, True)
 
+class Result:
+	def __init__(self, win, num_of_turns, blue_result, civ_result, assa_result, red_result):
+		self.win = win
+		self.num_of_turns = num_of_turns
+		self.blue_result = blue_result
+		self.civ_result = civ_result
+		self.assa_result = assa_result
+		self.red_result = red_result
+
+class Stats:
+	def __init__(self, runs, cm, g):
+		self.runs = runs
+		self.cm = cm
+		self.g = g
+
+		self.wins = 0
+		self.loses = 0
+
+		self.total_num_of_turns = 0
+		self.total_blue_result = 0
+		self.total_civ_result = 0
+		self.total_assa_result = 0
+		self.total_red_result = 0
+
+		self.min_num_of_turns = 0
+		self.min_blue_result = 0
+		self.min_civ_result = 0
+		self.min_assa_result = 0
+		self.min_red_result = 0
+
+		self.max_num_of_turns = 0
+		self.max_blue_result = 0
+		self.max_civ_result = 0
+		self.max_assa_result = 0
+		self.max_red_result = 0
+
+		self.avg_num_of_turns = 0
+		self.avg_blue_result = 0
+		self.avg_civ_result = 0
+		self.avg_assa_result = 0
+		self.avg_red_result = 0
+	
+	def addStat(self, r):
+		if r.win:
+			self.wins += 1
+		else:
+			self.loses += 1
+
+		self.total_num_of_turns += r.num_of_turns
+		self.total_blue_result += r.blue_result
+		self.total_civ_result += r.civ_result
+		self.total_assa_result += r.assa_result
+		self.total_red_result += r.red_result
+
+		self.min_num_of_turns = min(self.min_num_of_turns, r.num_of_turns)
+		self.min_blue_result = min(self.min_blue_result, r.blue_result)
+		self.min_civ_result = min(self.min_civ_result, r.civ_result)
+		self.min_assa_result = min(self.min_assa_result, r.assa_result)
+		self.min_red_result = min(self.min_red_result, r.red_result)
+
+		self.max_num_of_turns = max(self.max_num_of_turns, r.num_of_turns)
+		self.max_blue_result = max(self.max_num_of_turns, r.blue_result)
+		self.max_civ_result = max(self.max_num_of_turns, r.civ_result)
+		self.max_assa_result = max(self.max_num_of_turns, r.assa_result)
+		self.max_red_result = max(self.max_num_of_turns, r.red_result)
+	
+	def computeAverage(self):
+		self.avg_num_of_turns = self.total_num_of_turns / self.runs
+		self.avg_blue_result = self.total_blue_result / self.runs
+		self.avg_civ_result = self.total_civ_result / self.runs
+		self.avg_assa_result = self.total_assa_result / self.runs
+		self.avg_red_result = self.total_red_result / self.runs
+
+	def printStats(self):
+		self.computeAverage()
+		s = 	(f'Turns:{self.avg_num_of_turns} Blue:{self.avg_blue_result} Civ:{self.avg_civ_result} Assa:{self.avg_assa_result}'
+					f' Red:{self.avg_red_result} CM:{self.cm} GUESSER:{self.g}\n')
+
+		print(s)
+		f = open("bot_results.txt", "a")
+		# if successfully opened start appending
+		if f.mode == 'a':
+			f.write(s)
+		f.close()
 
 if __name__ == "__main__":
-	game = Game()
-	game.run()
+	codemasters = ["codemaster_bert", "codemaster_elmo", "codemaster_roberta", "codemaster_distilbert"]
+	guessers = ["guesser_bert", "guesser_elmo", "guesser_roberta", "guesser_distilbert"]
+	total_runs = 3000
+
+	for cm in codemaster:
+		for g in guessers:
+			runs = 0
+			s = Stats(runs, cm, g)
+			while runs < total_runs:
+				runs += 1
+				game = Game(cm, g)
+				result = game.run()
+				s.addStat(result)
+				
