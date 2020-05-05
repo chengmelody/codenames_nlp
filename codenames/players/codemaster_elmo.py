@@ -28,12 +28,13 @@ class ai_codemaster(codemaster):
 		self.elmo = hub.Module("https://tfhub.dev/google/elmo/3", trainable=True)
 		cm_wordlist_embedding = self.elmo(self.cm_wordlist, signature="default", as_dict=True)["default"]
 
-		with tf.compat.v1.Session() as sess:
-			init = tf.compat.v1.global_variables_initializer()
-			t_init = tf.compat.v1.tables_initializer()
-			sess.run(init)
-			sess.run(t_init)
-			self.cm_wordlist_run = sess.run(cm_wordlist_embedding)
+		self.sess = tf.compat.v1.Session()
+		init = tf.compat.v1.global_variables_initializer()
+		t_init = tf.compat.v1.tables_initializer()
+		self.sess.run(init)
+		self.sess.run(t_init)
+		
+		self.cm_wordlist_run = self.sess.run(cm_wordlist_embedding)
 
 	def receive_game_state(self, words, maps):
 		self.words = words
@@ -68,27 +69,21 @@ class ai_codemaster(codemaster):
 		return red_words, bad_words, lose_words
 
 	def cosineSimilarity(self, embedding, input_words, num_results):
-		with tf.compat.v1.Session() as sess:
-			init = tf.compat.v1.global_variables_initializer()
-			t_init = tf.compat.v1.tables_initializer()
-			sess.run(init)
-			sess.run(t_init)
+		results = []
 
-			results = []
+		for i in range(len(input_words)):
+			search_vect = self.sess.run(embedding[i]).reshape(1, -1)
+			cosine_similarities = pd.Series(cosine_similarity(search_vect, self.cm_wordlist_run).flatten())
 
-			for i in range(len(input_words)):
-				search_vect = sess.run(embedding[i]).reshape(1, -1)
-				cosine_similarities = pd.Series(cosine_similarity(search_vect, self.cm_wordlist_run).flatten())
-
-				words = []
-				for index, probablity in cosine_similarities.nlargest(num_results).iteritems():
-					words.append(self.cm_wordlist[index])
-				
-				clean_up = words[1:]
-				clean_up = [w for w in clean_up if not w.startswith(input_words[i])]
-				results.append(clean_up)
+			words = []
+			for index, probablity in cosine_similarities.nlargest(num_results).iteritems():
+				words.append(self.cm_wordlist[index])
 			
-			return results
+			clean_up = words[1:]
+			clean_up = [w for w in clean_up if not w.startswith(input_words[i])]
+			results.append(clean_up)
+		
+		return results
 
 	def removeBadClues(self, red_common_words, bad_common_words, lose_closest):
 		diff_common_words = red_common_words - bad_common_words
@@ -130,3 +125,6 @@ class ai_codemaster(codemaster):
 		else:
 			new_common_words.most_common(1)[0]
 			return word, freq
+	
+	def __del__(self):
+		self.sess.close()

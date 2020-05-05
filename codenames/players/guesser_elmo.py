@@ -18,12 +18,14 @@ import collections
 class ai_guesser(guesser):
 
 	def __init__(self, brown_ic=None, glove_vecs=None, word_vectors=None):
-		self.brown_ic = brown_ic
-		self.glove_vecs = glove_vecs
-		self.word_vectors = word_vectors
 		self.num = 0
-
 		self.elmo = hub.Module("https://tfhub.dev/google/elmo/3", trainable=True)
+
+		self.sess = tf.compat.v1.Session()
+		init = tf.compat.v1.global_variables_initializer()
+		t_init = tf.compat.v1.tables_initializer()
+		self.sess.run(init)
+		self.sess.run(t_init)
 
 	def get_board(self, words):
 		self.words = words
@@ -51,21 +53,19 @@ class ai_guesser(guesser):
 		# print(new_words)
 		board_embedding = self.elmo(new_words, signature="default", as_dict=True)["default"]
 
-		with tf.compat.v1.Session() as sess:
-			init = tf.compat.v1.global_variables_initializer()
-			t_init = tf.compat.v1.tables_initializer()
-			sess.run(init)
-			sess.run(t_init)
-			board_run = sess.run(board_embedding)
+		board_run = self.sess.run(board_embedding)
 
-			embedding = self.elmo(input, signature="default", as_dict=True)["default"]
-			results_returned = 100
+		embedding = self.elmo(input, signature="default", as_dict=True)["default"]
+		results_returned = 100
 
-			search_vect = sess.run(embedding[0]).reshape(1, -1)
-			cosine_similarities = pd.Series(cosine_similarity(search_vect, board_run).flatten())
+		search_vect = self.sess.run(embedding[0]).reshape(1, -1)
+		cosine_similarities = pd.Series(cosine_similarity(search_vect, board_run).flatten())
 
-			words = []
-			for index, probablity in cosine_similarities.nlargest(results_returned).iteritems():
-				words.append((probablity, new_words[index]))
+		words = []
+		for index, probablity in cosine_similarities.nlargest(results_returned).iteritems():
+			words.append((probablity, new_words[index]))
 
-			return words
+		return words
+	
+	def __del__(self):
+		self.sess.close()
