@@ -18,21 +18,23 @@ import gensim.models.keyedvectors as word2vec
 import gensim.downloader as api
 import argparse
 
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+import tensorflow as tf
+tf.compat.v1.disable_eager_execution()
+import tensorflow_hub as hub
+
 
 class Game:
 	guesser = 0
 	codemaster = 0
 
-	def __init__(self, codemaster, guesser, glove_vecs=None):
+	def __init__(self, codemaster, guesser, glove_vecs=None, elmo=None):
 		codemaster_module = importlib.import_module(codemaster)
 		guesser_module = importlib.import_module(guesser)
 
-		if glove_vecs:
-			self.codemaster = codemaster_module.ai_codemaster(glove_vecs=glove_vecs)
-			self.guesser = guesser_module.ai_guesser(glove_vecs=glove_vecs)
-		else:
-			self.codemaster = codemaster_module.ai_codemaster()
-			self.guesser = guesser_module.ai_guesser()
+		self.codemaster = codemaster_module.ai_codemaster(glove_vecs=glove_vecs, elmo_embedding=elmo)
+		self.guesser = guesser_module.ai_guesser(glove_vecs=glove_vecs, elmo_embedding=elmo)
 
 		self.seed = 'time'
 
@@ -406,6 +408,22 @@ class Stats:
 				f.write(forfile)
 			f.close()
 
+def createElmoEmbedding():
+	cm_wordlist = []
+	with open('players/cm_wordlist.txt') as infile:
+		for line in infile:
+			cm_wordlist.append(line.rstrip())
+	
+	elmo = hub.Module("https://tfhub.dev/google/elmo/3", trainable=True)
+	cm_wordlist_embedding = elmo(cm_wordlist, signature="default", as_dict=True)["default"]
+
+	with tf.compat.v1.Session() as sess:
+		init = tf.compat.v1.global_variables_initializer()
+		t_init = tf.compat.v1.tables_initializer()
+		sess.run(init)
+		sess.run(t_init)
+		return sess.run(cm_wordlist_embedding)
+
 if __name__ == "__main__":
 	codemasters = ["elmo", "bert", "roberta", "distilbert", "glove_03"]
 	guessers = ["elmo", "bert", "roberta", "distilbert", "glove_03"]
@@ -418,12 +436,14 @@ if __name__ == "__main__":
 			glove_vecs[line[0]] = np.array([float(n) for n in line[1:]])
 	print('loaded glove vectors')
 
+	elmo_embedding = createElmoEmbedding()
+
 	for cm in codemasters:
 		runs = 0
 		s = Stats(total_runs, cm, "elmo")
 		while runs <= total_runs:
 			runs += 1
-			game = Game("players.codemaster_"+ cm, "players.guesser_elmo", glove_vecs)
+			game = Game("players.codemaster_"+ cm, "players.guesser_elmo", glove_vecs, elmo_embedding)
 			result = game.run()
 			s.addStat(result)
 			s.printStats(True)
@@ -434,7 +454,7 @@ if __name__ == "__main__":
 		s = Stats(total_runs, "elmo", g)
 		while runs <= total_runs:
 			runs += 1
-			game = Game("players.codemaster_elmo", "players.guesser_" + g, glove_vecs)
+			game = Game("players.codemaster_elmo", "players.guesser_" + g, glove_vecs, elmo_embedding)
 			result = game.run()
 			s.addStat(result)
 			s.printStats(True)

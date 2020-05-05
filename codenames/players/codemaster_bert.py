@@ -6,7 +6,7 @@ from players.codemaster import codemaster
 
 class ai_codemaster(codemaster):
 
-	def __init__(self, brown_ic=None, glove_vecs=None, word_vectors=None):
+	def __init__(self, brown_ic=None, glove_vecs=None, word_vectors=None, elmo_embedding=None):
 		self.cm_wordlist = []
 		self.previous_clue = ''
 		with open('players/cm_wordlist.txt') as infile:

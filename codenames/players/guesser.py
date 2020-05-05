@@ -3,7 +3,7 @@ class guesser():
     clue = 0
     clues = []
     
-    def __init__(self, brown_ic=None, glove_vecs=None, word_vectors=None):
+    def __init__(self, brown_ic=None, glove_vecs=None, word_vectors=None, elmo_embedding=None):
         pass
 
 
