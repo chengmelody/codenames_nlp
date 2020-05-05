@@ -10,7 +10,7 @@
       "request": "launch",
       "program": "${file}",
       "console": "integratedTerminal",
-      "args": ["players.codemaster_bert", "players.guesser_bert", "--seed", "3442"],
+      "args": [],
       "cwd": "${workspaceFolder}"
     }
   ]

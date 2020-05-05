@@ -61,7 +61,8 @@ class ai_codemaster(codemaster):
 				# print(query)
 				top_words = []
 				for idx, distance in results[0:num_results]:
-						top_words.append(self.cm_wordlist[idx])
+						if not self.cm_wordlist[idx].startswith(query):
+							top_words.append(self.cm_wordlist[idx])
 				
 				# print(top_words[1:])
 				answer.append(top_words[1:])
@@ -91,7 +92,7 @@ class ai_codemaster(codemaster):
 		bad_closest = self.getClosestWords(bad_words, num_results)
 		lose_closest = self.getClosestWords(lose_words, num_results)
 
-		red_common_words = None
+		new_common_words = None
 		for i in range(30, num_results):
 			red_common_words = collections.Counter(x for xs in red_closest for x in xs[:i])
 			bad_common_words = collections.Counter(x for xs in bad_closest for x in xs[:i])
@@ -103,5 +104,5 @@ class ai_codemaster(codemaster):
 				if freq > 1 or len(red_words) == 1:
 					return word, freq
 		else:
-			red_common_words.most_common(1)[0]
+			new_common_words.most_common(1)[0]
 			return word, freq

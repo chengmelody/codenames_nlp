@@ -61,7 +61,8 @@ class ai_codemaster(codemaster):
 				# print(query)
 				top_words = []
 				for idx, distance in results[0:num_results]:
-						top_words.append(self.cm_wordlist[idx])
+						if not self.cm_wordlist[idx].startswith(query):
+							top_words.append(self.cm_wordlist[idx])
 				
 				# print(top_words[1:])
 				answer.append(top_words[1:])

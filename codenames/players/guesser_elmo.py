@@ -43,9 +43,6 @@ class ai_guesser(guesser):
 		print(result)
 		self.num -= 1
 		return result[0][1]
-	
-	def cos_sim(a, b):
-			return np.inner(a, b) / (np.linalg.norm(a) * (np.linalg.norm(b)))
 
 	def getNearest(self, input):
 		np.set_printoptions(threshold=sys.maxsize)
@@ -60,7 +57,6 @@ class ai_guesser(guesser):
 			sess.run(init)
 			sess.run(t_init)
 			board_run = sess.run(board_embedding)
-
 
 			embedding = self.elmo(input, signature="default", as_dict=True)["default"]
 			results_returned = 100
