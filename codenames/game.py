@@ -248,7 +248,7 @@ class Game:
 		game_counter = 0
 		while game_condition != "Lose" or game_condition != "Win":
 			# board setup and display
-			self.cls()
+			#self.cls()
 			words_in_play = self.list_words()
 			current_map = self.list_map()
 			self.codemaster.receive_game_state(words_in_play, current_map)
@@ -289,7 +289,7 @@ class Game:
 					break
 
 				elif game_condition == "Lose":
-					self.display_board_codemaster()
+					#self.display_board_codemaster()
 					#print("You Lost")
 					game_counter = 25
 					# self.write_results(game_counter)
@@ -297,7 +297,7 @@ class Game:
 					return self.write_results(game_counter, False)
 
 				elif game_condition == "Win":
-					self.display_board_codemaster()
+					#self.display_board_codemaster()
 					#print("You Won")
 					# self.write_results(game_counter)
 					#print("Game Counter:", game_counter)
@@ -390,7 +390,7 @@ class Stats:
 					f'Min Assa:{self.min_assa_result} Avg Assa:{self.avg_assa_result} Max Assa:{self.max_assa_result} '
 					f'CM:{self.cm} GUESSER:{self.g}\n')
 
-		print(s)
+		# print(s)
 
 		forfile = 	(f'{self.runs}, '
 			f'{self.wins}, {self.loses}, '
@@ -425,8 +425,8 @@ def createElmoEmbedding():
 		return sess.run(cm_wordlist_embedding)
 
 if __name__ == "__main__":
-	codemasters = ["elmo", "bert", "roberta", "distilbert", "glove_03"]
-	guessers = ["elmo", "bert", "roberta", "distilbert", "glove_03"]
+	codemasters = ["bert"]
+	guessers = ["glove"]
 	total_runs = 30
 
 	glove_vecs = {}
@@ -436,26 +436,26 @@ if __name__ == "__main__":
 			glove_vecs[line[0]] = np.array([float(n) for n in line[1:]])
 	print('loaded glove vectors')
 
-	elmo_embedding = createElmoEmbedding()
+	# elmo_embedding = createElmoEmbedding()
 
 	for cm in codemasters:
-		runs = 0
-		s = Stats(total_runs, cm, "elmo")
-		while runs <= total_runs:
-			runs += 1
-			game = Game("players.codemaster_"+ cm, "players.guesser_elmo", glove_vecs, elmo_embedding)
-			result = game.run()
-			s.addStat(result)
-			s.printStats(True)
-		s.printStats(True)
+		for g in guessers:
+			runs = 0
+			s = Stats(total_runs, cm, g)
+			while runs <= total_runs:
+				runs += 1
+				game = Game("players.codemaster_"+ cm, "players.guesser_" + g, glove_vecs)
+				result = game.run()
+				s.addStat(result)
+				s.printStats(True)
 
-	for g in guessers:
-		runs = 0
-		s = Stats(total_runs, "elmo", g)
-		while runs <= total_runs:
-			runs += 1
-			game = Game("players.codemaster_elmo", "players.guesser_" + g, glove_vecs, elmo_embedding)
-			result = game.run()
-			s.addStat(result)
-			s.printStats(True)
-		s.printStats(True)
+	# for g in guessers:
+	# 	runs = 0
+	# 	s = Stats(total_runs, "elmo", g)
+	# 	while runs <= total_runs:
+	# 		runs += 1
+	# 		game = Game("players.codemaster_elmo", "players.guesser_" + g, glove_vecs, elmo_embedding)
+	# 		result = game.run()
+	# 		s.addStat(result)
+	# 		s.printStats(True)
+	# 	s.printStats(True)

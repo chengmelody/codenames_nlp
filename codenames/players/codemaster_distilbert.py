@@ -79,9 +79,6 @@ class ai_codemaster(codemaster):
 		if self.previous_clue in diff_common_words:
 			diff_common_words[self.previous_clue] -= 1
 
-		for clue in self.previous_clue:
-		 	del diff_common_words[clue]
-
 		# print(diff_common_words.most_common(5))
 		return diff_common_words
 
@@ -92,17 +89,17 @@ class ai_codemaster(codemaster):
 		bad_closest = self.getClosestWords(bad_words, num_results)
 		lose_closest = self.getClosestWords(lose_words, num_results)
 
-		red_common_words = None
+		new_common_words = None
 		for i in range(30, num_results):
 			red_common_words = collections.Counter(x for xs in red_closest for x in xs[:i])
 			bad_common_words = collections.Counter(x for xs in bad_closest for x in xs[:i])
 
 			new_common_words = self.removeBadClues(red_common_words, bad_common_words, lose_closest)
-			if red_common_words:
-				word, freq = red_common_words.most_common(1)[0]
+			if new_common_words:
+				word, freq = new_common_words.most_common(1)[0]
 
 				if freq > 1 or len(red_words) == 1:
 					return word, freq
 		else:
-			red_common_words.most_common(1)[0]
+			new_common_words.most_common(1)[0]
 			return word, freq
